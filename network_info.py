@@ -3,15 +3,10 @@
 #display results
 #offer to send reults to a printer also
 
+import sys
+import ipaddress
 import socket
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
-        IP = s.getsockname()[0]
-    except:
-        IP = '127.0.0.1'
-    finally:
-        s.close()
-    return IP
+user_input = input("Enter a Fully Qualified Domain Name or IPv4 or IPv6 address\n")
+print ("your input was: ", user_input)
+#ipaddress.ip_network(user_input)
+print(socket.getaddrinfo(user_input, 80, family=0, type=0, proto=0, flags=0))
