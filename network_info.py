@@ -22,7 +22,6 @@ def localhost_info():
         except:pass
 # This is the IP address of the localhost
 localhost_info()
-
 ################## now get the target from the user ###############################################
 user_input = input("Enter a Fully Qualified Domain Name or IPv4 or IPv6 address\n")
 print ("your input was: ", user_input)
