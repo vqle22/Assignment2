@@ -10,6 +10,18 @@ import  pexpect
 
 
 ################## use Vinh's code here, get the info about this machine ##########################
+def localhost_info():
+    for i in netifaces.interfaces():
+        try:
+            # Address
+            print("IPv4: ", netifaces.ifaddresses(i)[netifaces.AF_INET][0]['addr'])
+            print("Subnet Mask: ", netifaces.ifaddresses(i)[netifaces.AF_INET][0]['netmask'])
+            print("IPv6: ", netifaces.ifaddresses(i)[netifaces.AF_INET6][0]['addr'])
+            print("Subnet Mask: ", netifaces.ifaddresses(i)[netifaces.AF_INET6][0]['netmask'])          
+            print("\n")
+        except:pass
+# This is the IP address of the localhost
+localhost_info()
 
 ################## now get the target from the user ###############################################
 user_input = input("Enter a Fully Qualified Domain Name or IPv4 or IPv6 address\n")
