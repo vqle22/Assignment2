@@ -1,0 +1,140 @@
+#prompt user for address
+#run traceroute to provided address and back
+#display results
+#offer to send reults to a printer also
+
+import ipaddress
+import socket
+import pexpect
+import netifaces
+import subprocess
+import sys
+from datetime import datetime
+
+#clear out previous terminal text to make sure we only write the output from this program
+clear_command_string = 'reset'
+subprocess.call(clear_command_string, shell=True)
+#begin recording the program output to a .txt file in order to examine it later or print it
+write_output_command_string = 'script ping_trace_output.txt'
+#nope, too much for current UI to handle
+#subprocess.call(write_output_command_string, shell=True)
+
+user_choice = ""
+user_input = ""
+
+################## get the info about this machine ##########################
+def localhost_info():
+    print("*** LOCAL NETWORK INFO: ***")
+    for i in netifaces.interfaces():
+        try:
+            # Address
+            print("IPv4: ", netifaces.ifaddresses(i)[netifaces.AF_INET][0]['addr'])
+            print("Subnet Mask: ", netifaces.ifaddresses(i)[netifaces.AF_INET][0]['netmask'])
+            print("IPv6: ", netifaces.ifaddresses(i)[netifaces.AF_INET6][0]['addr'])
+            print("Subnet Mask: ", netifaces.ifaddresses(i)[netifaces.AF_INET6][0]['netmask'])          
+            print("\n")
+        except:pass
+# This is the IP address of the localhost
+localhost_info()
+
+
+################## now get the target from the user ############################
+################## choose between it being an address or an fqdn ###############
+
+while user_choice != "FQDN" and user_choice != "IPA":
+    user_choice = input("Enter FQDN or IPA: ")
+    if user_choice != "FQDN" and user_choice != "IPA":
+        print("You must type FQDN or IPA!")
+
+#########if it is an ip address, then do this ################################
+#######try to create an ip address from the input, catch faulty values #######
+if user_choice == "IPA":
+    user_input = input("Enter an IPv4 or IPv6 address: \n")
+    print ("The address you input was: ", user_input)
+    try:
+        input_ip_address = ipaddress.ip_network(user_input)
+        print("Success! IP Address recognized: ", input_ip_address)
+   
+        print("This address is IP version: ", input_ip_address.version)
+        print("Host info for this IP Address:")
+        host_bash_string = "nslookup " + user_input
+        subprocess.call(host_bash_string, shell=True)
+        print("\nplease check ---> $ man nslookup  <--- for further reference\n\n")
+    except ValueError:
+        print("Error! The input was not a valid IPv4 or IPv6 address.")
+    else:
+        target_address = input_ip_address
+        print("Target Address Acquired! Ready the Ping! => ==> ===> ====> ", target_address)
+        print("\t\tFIRE PING!\n")
+        
+
+#if it is not an ip address, then do this (includes fqdn name errors)
+#we need to look at the dns to get info about the fqdn we got as user input
+
+if user_choice == "FQDN":
+    user_input = input("Enter a Fully Qualified Domain Name (example - uw.edu or www.uw.edu): \n")
+    print ("The input FQDN was: ", user_input)
+    try:
+        print("The input FQDN Hostname is:  ", user_input)
+        input_ip_address = socket.gethostbyname(user_input)
+        print("The IP address for the input FQDN is: ", input_ip_address)
+    except ValueError:
+        print("Error! Unable to get Hostname and IP from the input FQDN")
+   
+
+
+################## now have both addresses, time to run the traceroute ############################
+
+#run the ping from here to there using bash commands!
+ping_command_string = 'ping -c 5 ' + user_input + "; echo > oo.txt;"
+returned_value = subprocess.call(ping_command_string, shell=True)
+
+##############################################################################
+port_list = {20, 21, 22, 25, 53, 80, 135, 161, 162, 38, 443}
+print("\nScanning For Open Ports: ")
+try:
+    for port in port_list:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2)
+        result = sock.connect_ex((user_input, port))
+        if result == 0:
+            if port == 20 or port == 21:
+                print ("Port {} FTP: 	 Open".format(port))
+            if port == 22:
+                print ("Port {} SSH: 	 Open".format(port))
+            if port == 25:
+                print ("Port {} SMTP: 	 Open".format(port))
+            if port == 53:
+                print ("Port {} DNS: 	 Open".format(port))
+            if port == 80:
+                print ("Port {} HTTP: 	 Open".format(port))
+            if port == 135:
+                print ("Port {} RPC: 	 Open".format(port))
+            if port == 161 or port == 162:
+                print ("Port {} SNMP: 	 Open".format(port))
+            if port == 389:
+                print ("Port {} LDAP: 	 Open".format(port))
+            if port == 443:
+                print ("Port {} HTTPS: 	 Open".format(port))
+        sock.close()
+
+except KeyboardInterrupt:
+    print ("You pressed Ctrl+C")
+    sys.exit()
+
+except socket.gaierror:
+    print ('Hostname could not be resolved. Exiting')
+    sys.exit()
+
+except socket.error:
+    print ("Couldn't connect to server")
+    sys.exit()
+##############################################################################
+
+print("\nWould you like to send this output to a printer?")
+print_choice = input("y to print, n to skip this step\n")
+if (print_choice == "y" or print_choice == "Y"):
+    #launch the printer command
+    print("\nYour default printer is set to: ", subprocess.call("lpstat -d", shell=True))
+
+print("\nExiting Program\n")
